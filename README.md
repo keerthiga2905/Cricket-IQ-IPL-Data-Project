@@ -42,6 +42,7 @@ venv\Scripts\activate
 3️⃣ Install Dependencies
 pip install -r requirements.txt
 📜 requirements.txt
+
 numpy==2.1.3
 pandas==2.1.4
 scikit-learn==1.3.2
