@@ -8,8 +8,8 @@ It takes match details as input and predicts the winning probabilities using a t
 🔹 Simple UI with dropdowns & numeric inputs
 🔹 Results shown in a bar chart (win probabilities)
 
-📂 Project Structure
-CricketIQ_Infosys_Internship_Feb2025/
+**📂 Project Structure**
+**CricketIQ_Infosys_Internship_Feb2025/**
 
 │── 📜 README.md                      # Project documentation  
 │── 📦 requirements.txt                # List of dependencies  
@@ -32,7 +32,7 @@ CricketIQ_Infosys_Internship_Feb2025/
 │   ├── 🏗️ train_model.py              # Script for model training 
 
 
-2️⃣ Create & Activate Virtual Environment
+**2️⃣ Create & Activate Virtual Environment**
 Mac/Linux:
 python -m venv venv
 source venv/bin/activate
@@ -41,7 +41,9 @@ python -m venv venv
 venv\Scripts\activate
 3️⃣ Install Dependencies
 pip install -r requirements.txt
-📜 requirements.txt
+
+
+**📜 requirements.txt**
 
 numpy==2.1.3
 pandas==2.1.4
@@ -52,7 +54,7 @@ streamlit==1.33.0
 joblib==1.3.2
 pickle-mixin==1.0.2
 
-📊 Data Processing & EDA
+**📊 Data Processing & EDA**
 Datasets Used:
 matches.csv: Contains match-level details.
 deliveries.csv: Contains ball-by-ball details.
@@ -65,7 +67,7 @@ Check: eda_data_processing.ipynb
 
 
 
-🛠 Model Training
+**🛠 Model Training**
 Model: Random Forest Classifier
 Features Used: Batting Team, Bowling Team, Venue, Total Runs, Wickets, Overs, Target (for 2nd innings), Run Rate Impact.
 Data Encoding: Label Encoding used for teams and venues (saved in le_team.pkl and le_venue.pkl).
@@ -74,7 +76,7 @@ The trained model is saved as final_rf_model.pkl.
 
 Check: model_training.ipynb
 
-🎯 Streamlit UI
+**🎯 Streamlit UI**
 Run the Streamlit app to predict the match outcome in real-time.
 
 Command to Start the App:
@@ -109,7 +111,7 @@ plt.title("IPL Match Prediction Result")
 plt.show()
 This is implemented in streamlit_app.py, where the winning probabilities are displayed using Matplotlib in Streamlit.
 
-📝 Future Enhancements
+**📝 Future Enhancements**
 Use Deep Learning (LSTMs) for better predictions.
 Add Live API Integration for real-time match updates.
 Improve UI with dynamic graphs.
