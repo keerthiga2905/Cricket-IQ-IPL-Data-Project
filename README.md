@@ -79,7 +79,7 @@ Check: model_training.ipynb
 **🎯 Streamlit UI**
 Run the Streamlit app to predict the match outcome in real-time.
 
-Command to Start the App:
+**Command to Start the App:**
 streamlit run scripts/streamlit_app.py
 UI Features:
 Select Batting Team, Bowling Team, and Venue.
@@ -115,3 +115,7 @@ This is implemented in streamlit_app.py, where the winning probabilities are dis
 Use Deep Learning (LSTMs) for better predictions.
 Add Live API Integration for real-time match updates.
 Improve UI with dynamic graphs.
+
+
+![image](https://github.com/user-attachments/assets/c89a05bd-ef46-4c43-82a2-df80e6f34e9a)
+
