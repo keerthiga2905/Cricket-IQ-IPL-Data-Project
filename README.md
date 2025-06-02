@@ -118,4 +118,6 @@ Improve UI with dynamic graphs.
 
 
 ![image](https://github.com/user-attachments/assets/c89a05bd-ef46-4c43-82a2-df80e6f34e9a)
+![image](https://github.com/user-attachments/assets/0b8b6aad-d0db-46c8-9c76-36c2f52aeeb1)
+
 
