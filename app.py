@@ -1,190 +1,163 @@
 import streamlit as st
 import joblib
 import numpy as np
+import plotly.graph_objects as go
+from pathlib import Path
 
-# Load label encoders and model
-le_team = joblib.load(r'C:\Users\DELL\OneDrive\Desktop\match\le_team.pkl')
-le_venue = joblib.load(r'C:\Users\DELL\OneDrive\Desktop\match\le_venue.pkl')
-model = joblib.load(r'C:\Users\DELL\OneDrive\Desktop\match\final_rf_model.pkl')
+# Keep these .pkl files in the same folder as app.py.
+BASE_DIR = Path(__file__).resolve().parent
+
+le_team = joblib.load(BASE_DIR / "le_team.pkl")
+le_venue = joblib.load(BASE_DIR / "le_venue.pkl")
+model = joblib.load(BASE_DIR / "random_forest_modelfinal.pkl")
 
 teams = le_team.classes_.tolist()
 venues = le_venue.classes_.tolist()
 
-st.set_page_config(page_title="Win Probability Predictor", layout="wide")
+st.set_page_config(page_title="Cricket IQ | Win Probability", layout="wide")
 
-st.markdown(
-    """
-    <style>
-        body {
-            background-color: #001F3F;
-            color: white;
-        }
-        .main {
-            background-color: #001F3F;
-            padding: 20px;
-            border-radius: 10px;
-            color: white;
-        }
-        .stApp {
-            background-color: #001F3F;
-        }
-        .title-text {
-            font-size: 32px;
-            font-weight: bold;
-            color: #FFD700; /* Gold */
-            text-align: center;
-        }
-        .section-title {
-            font-size: 26px;
-            font-weight: bold;
-            color: #FF4136; /* Red */
-            text-align: center;
-        }
-        .metric-box {
-            font-size: 18px;
-            font-weight: bold;
-            text-align: center;
-            color: white;
-            background-color: rgba(255, 255, 255, 0.2);
-            padding: 10px;
-            border-radius: 10px;
-            margin: 5px;
-        }
-        .highlight {
-            font-size: 24px;
-            font-weight: bold;
-            color: #39FF14; /* Neon Green */
-            text-align: center;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown("""
+<style>
+.stApp { background-color: #001F3F; color: white; }
+.title-text { font-size: 32px; font-weight: 700; color: #FFD700; text-align: center; }
+.section-title { font-size: 26px; font-weight: 700; color: #FF4136; text-align: center; }
+.metric-box {
+    font-size: 18px; font-weight: 600; text-align: center; color: white;
+    background-color: rgba(255,255,255,0.12); padding: 12px;
+    border-radius: 10px; margin: 5px 0;
+}
+</style>
+""", unsafe_allow_html=True)
 
-st.markdown("<div class='title-text'>🏏 Live Win Probability Prediction</div>", unsafe_allow_html=True)
+st.markdown("<div class='title-text'>🏏 Cricket IQ — Win Probability Prediction</div>",
+            unsafe_allow_html=True)
 st.sidebar.header("🏟️ Match Input Details")
 
-inning = st.sidebar.selectbox("Innings", options=[1, 2])
+inning = st.sidebar.selectbox("Innings", [1, 2])
 batting_team = st.sidebar.selectbox("🏏 Batting Team", teams)
-bowling_team = st.sidebar.selectbox("🎯 Bowling Team", [team for team in teams if team != batting_team])
+bowling_options = [team for team in teams if team != batting_team]
+bowling_team = st.sidebar.selectbox("🎯 Bowling Team", bowling_options)
 venue = st.sidebar.selectbox("📍 Venue", venues)
 
 cum_runs = st.sidebar.number_input("Total Runs", min_value=0, value=54, step=1)
-cum_wickets = st.sidebar.number_input("Wickets Lost", min_value=0, value=3, step=1)
-overs_completed = st.sidebar.number_input("Overs Completed", min_value=0.0, max_value=20.0, value=10.0, step=0.1)
+cum_wickets = st.sidebar.number_input("Wickets Lost", min_value=0, max_value=10, value=3, step=1)
+overs_completed = st.sidebar.number_input(
+    "Overs Completed", min_value=0.0, max_value=20.0, value=10.0, step=0.1
+)
 
-target = st.sidebar.number_input("🎯 Target Score", min_value=0, value=160, step=1) if inning == 2 else 0
+target = st.sidebar.number_input(
+    "Target Score", min_value=0, value=160, step=1
+) if inning == 2 else 0
 
-current_rr = cum_runs / overs_completed if overs_completed > 0 else 0
-required_rr = (target - cum_runs) / (20 - overs_completed) if inning == 2 and (20 - overs_completed) > 0 else 0
+# Calculate the rate features used by the trained model.
+current_run_rate = cum_runs / overs_completed if overs_completed > 0 else 0.0
+overs_remaining = max(20.0 - overs_completed, 0.0)
+required_run_rate = (
+    max(target - cum_runs, 0) / overs_remaining
+    if inning == 2 and overs_remaining > 0
+    else 0.0
+)
 
 st.markdown("<div class='section-title'>📊 Match Overview</div>", unsafe_allow_html=True)
+c1, c2, c3 = st.columns(3)
+with c1:
+    st.markdown(f"<div class='metric-box'>🏏 Batting Team<br>{batting_team}</div>", unsafe_allow_html=True)
+with c2:
+    st.markdown(f"<div class='metric-box'>🎯 Bowling Team<br>{bowling_team}</div>", unsafe_allow_html=True)
+with c3:
+    st.markdown(f"<div class='metric-box'>📍 Venue<br>{venue}</div>", unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.markdown(f"<div class='metric-box'>🏏 <b>Batting Team</b><br>{batting_team}</div>", unsafe_allow_html=True)
-with col2:
-    st.markdown(f"<div class='metric-box'>🎯 <b>Bowling Team</b><br>{bowling_team}</div>", unsafe_allow_html=True)
-with col3:
-    st.markdown(f"<div class='metric-box'>📍 <b>Venue</b><br>{venue}</div>", unsafe_allow_html=True)
-
-st.divider()
-
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.markdown(f"<div class='metric-box'>🏏 <b>Total Runs</b><br>{cum_runs}</div>", unsafe_allow_html=True)
-with col2:
-    st.markdown(f"<div class='metric-box'>❌ <b>Wickets Lost</b><br>{cum_wickets}</div>", unsafe_allow_html=True)
-with col3:
-    st.markdown(f"<div class='metric-box'>⏳ <b>Overs Completed</b><br>{overs_completed}</div>", unsafe_allow_html=True)
-with col4:
-    st.markdown(f"<div class='metric-box'>🎯 <b>Target</b><br>{target if inning == 2 else 'N/A'}</div>", unsafe_allow_html=True)
-
-st.markdown("<div class='section-title'>📈 Run Rates</div>", unsafe_allow_html=True)
-
-col1, col2 = st.columns(2)
-with col1:
-    st.markdown(f"<div class='metric-box'>🔥 <b>Current Run Rate</b><br>{round(current_rr, 2)}</div>", unsafe_allow_html=True)
-with col2:
-    st.markdown(f"<div class='metric-box'>🚀 <b>Required Run Rate</b><br>{round(required_rr, 2) if inning == 2 else 'N/A'}</div>", unsafe_allow_html=True)
-
-input_data = np.array([[inning, le_team.transform([batting_team])[0],
-                        le_team.transform([bowling_team])[0], le_venue.transform([venue])[0],
-                        cum_runs, cum_wickets, overs_completed, target if inning == 2 else 0,
-                        current_rr]]).reshape(1, -1)
-
-win_prob = model.predict_proba(input_data)[0]  # Assuming model supports predict_proba()
-batting_team_win_prob = round(win_prob[1] * 100, 2)
-bowling_team_win_prob = round(win_prob[0] * 100, 2)
-predicted_winner = batting_team if batting_team_win_prob > bowling_team_win_prob else bowling_team
-
-st.markdown("<div class='section-title'>🔮 Win Probability Prediction</div>", unsafe_allow_html=True)
-
-st.markdown(f"<div class='metric-box' style='color: #FFD700;'>🏏 <b>{batting_team} Winning Probability:</b> {batting_team_win_prob}%</div>", unsafe_allow_html=True)
-st.progress(batting_team_win_prob / 100)
-
-st.markdown(f"<div class='metric-box' style='color: #FF4136;'>🎯 <b>{bowling_team} Winning Probability:</b> {bowling_team_win_prob}%</div>", unsafe_allow_html=True)
-st.progress(bowling_team_win_prob / 100)
-import plotly.graph_objects as go
-
-import streamlit as st
-import plotly.graph_objects as go
-
-# Define new colors
-batting_team_color = "#de4c3c"  # Violet
-bowling_team_color = "#6ee344"  # Dark Violet
-background_color = "#000000"  # Black
-
-# Win Probability Section
-st.markdown("<div class='section-title'>🔮 Win Probability Prediction</div>", unsafe_allow_html=True)
-
-col1, col2 = st.columns([1, 2])  # Arrange metric boxes & chart neatly
-
-with col1:
-    st.markdown(f"""
-        <div class='metric-box' style='color: {batting_team_color}; background-color: rgba(255, 255, 255, 0.2);'>
-        🏏 <b>{batting_team} Winning Probability:</b> {batting_team_win_prob}%</div>
-        """, unsafe_allow_html=True)
-    st.progress(batting_team_win_prob / 100)
-
-    st.markdown(f"""
-        <div class='metric-box' style='color: {bowling_team_color}; background-color: rgba(255, 255, 255, 0.2);'>
-        🎯 <b>{bowling_team} Winning Probability:</b> {bowling_team_win_prob}%</div>
-        """, unsafe_allow_html=True)
-    st.progress(bowling_team_win_prob / 100)
-
-with col2:
-    # Create a stacked bar chart
-    fig = go.Figure()
-    fig.add_trace(go.Bar(
-        x=['Win Probability'],
-        y=[batting_team_win_prob],
-        name=f"{batting_team}",
-        marker_color=batting_team_color
-    ))
-    fig.add_trace(go.Bar(
-        x=['Win Probability'],
-        y=[bowling_team_win_prob],
-        name=f"{bowling_team}",
-        marker_color=bowling_team_color
-    ))
-
-    # Layout settings
-    fig.update_layout(
-        barmode='stack',
-        title="Win Probability Distribution",
-        xaxis_title="",
-        yaxis_title="Probability (%)",
-        showlegend=True,
-        height=250,
-        margin=dict(l=20, r=20, t=40, b=20),
-        plot_bgcolor=background_color,  # Set black background
-        paper_bgcolor=background_color,  # Set black background
-        font=dict(color="white")  # Set text color to white for visibility
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    st.markdown(f"<div class='metric-box'>Total Runs<br>{cum_runs}</div>", unsafe_allow_html=True)
+with c2:
+    st.markdown(f"<div class='metric-box'>Wickets Lost<br>{cum_wickets}</div>", unsafe_allow_html=True)
+with c3:
+    st.markdown(f"<div class='metric-box'>Overs Completed<br>{overs_completed:.1f}</div>", unsafe_allow_html=True)
+with c4:
+    st.markdown(
+        f"<div class='metric-box'>Target<br>{target if inning == 2 else 'N/A'}</div>",
+        unsafe_allow_html=True
     )
 
-    # Display stacked bar chart
+c1, c2 = st.columns(2)
+with c1:
+    st.markdown(
+        f"<div class='metric-box'>🔥 Current Run Rate<br>{current_run_rate:.2f}</div>",
+        unsafe_allow_html=True
+    )
+with c2:
+    st.markdown(
+        f"<div class='metric-box'>🚀 Required Run Rate<br>{required_run_rate:.2f}</div>",
+        unsafe_allow_html=True
+    )
+
+# IMPORTANT: These are the exact 8 feature names and order stored in the model:
+# batting_team, bowling_team, inning, cum_wickets, current_run_rate,
+# required_run_rate, target, venue_canonical
+input_data = np.array([[
+    le_team.transform([batting_team])[0],
+    le_team.transform([bowling_team])[0],
+    inning,
+    cum_wickets,
+    current_run_rate,
+    required_run_rate,
+    target if inning == 2 else 0,
+    le_venue.transform([venue])[0],
+]], dtype=float)
+
+if input_data.shape[1] != model.n_features_in_:
+    st.error(
+        f"Feature mismatch: model expects {model.n_features_in_} features, "
+        f"but the app sends {input_data.shape[1]}."
+    )
+    st.stop()
+
+# This assumes class 1 means the batting team wins, matching the original app's assumption.
+probabilities = model.predict_proba(input_data)[0]
+class_to_probability = dict(zip(model.classes_, probabilities))
+batting_team_win_prob = float(class_to_probability.get(1, 0.0)) * 100
+bowling_team_win_prob = float(class_to_probability.get(0, 0.0)) * 100
+predicted_winner = (
+    batting_team if batting_team_win_prob >= bowling_team_win_prob else bowling_team
+)
+
+st.markdown("<div class='section-title'>🔮 Win Probability Prediction</div>",
+            unsafe_allow_html=True)
+
+left, right = st.columns([1, 2])
+with left:
+    st.markdown(
+        f"<div class='metric-box' style='color:#FFD700'>🏏 {batting_team} Winning Probability: "
+        f"{batting_team_win_prob:.2f}%</div>", unsafe_allow_html=True
+    )
+    st.progress(min(max(batting_team_win_prob / 100, 0.0), 1.0))
+    st.markdown(
+        f"<div class='metric-box' style='color:#6ee344'>🎯 {bowling_team} Winning Probability: "
+        f"{bowling_team_win_prob:.2f}%</div>", unsafe_allow_html=True
+    )
+    st.progress(min(max(bowling_team_win_prob / 100, 0.0), 1.0))
+
+with right:
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=["Win Probability"], y=[batting_team_win_prob], name=batting_team,
+        marker_color="#de4c3c"
+    ))
+    fig.add_trace(go.Bar(
+        x=["Win Probability"], y=[bowling_team_win_prob], name=bowling_team,
+        marker_color="#6ee344"
+    ))
+    fig.update_layout(
+        barmode="stack", title="Win Probability Distribution",
+        yaxis_title="Probability (%)", yaxis=dict(range=[0, 100]),
+        height=280, margin=dict(l=20, r=20, t=45, b=20),
+        plot_bgcolor="#000000", paper_bgcolor="#000000",
+        font=dict(color="white")
+    )
     st.plotly_chart(fig, use_container_width=True)
 
-st.markdown(f"<h3 style='color: #28A745; text-align: center;'>🏆 Predicted Winner: {predicted_winner}</h3>", unsafe_allow_html=True)
-
+st.markdown(
+    f"<h3 style='color:#28A745;text-align:center'>🏆 Predicted Winner: "
+    f"{predicted_winner}</h3>", unsafe_allow_html=True
+)
